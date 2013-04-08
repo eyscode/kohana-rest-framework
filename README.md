@@ -1,7 +1,7 @@
 # Kohana REST framework (KRF)
 
-** A module for building RESTApis, that works well with Kohana ORM.
-** Author: **Eysenck Gómez.
+**A module for building RESTApis, that works well with Kohana ORM.**
+**Author:** Eysenck Gómez.
 
 ## Overview
 
