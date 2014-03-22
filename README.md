@@ -62,7 +62,12 @@ Create a Serializer for work with a ORM Model, for example Post model.
 			// 'comments' => array(Relationship::NestedRelated, 'CommentSerializer')
 			// 'comments' => array(Relationship::FieldRelated, 'title')
 		);
-
+		protected $_belongs_to = array(
+			'autor' => array(Relationship::PrimaryKeyRelated)
+			// Anothers relationships types
+			//'autor' => array(Relationship::NestedRelated, 'UserSerializer')
+			//'autor' => array(Relationship::FieldRelated, 'name')
+		);
 	}
 
 Create a RESTApi Controller to list and create records of my Post model.
