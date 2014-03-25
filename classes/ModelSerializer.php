@@ -11,6 +11,8 @@ class ModelSerializer
 
     protected $_has_one = array();
 
+    protected $_belongs_to = array();
+
     public function __construct()
     {
         if ($this->_orm_model) {
@@ -39,6 +41,9 @@ class ModelSerializer
         if ($this->_has_many) {
             $res = array_merge($res, $this->get_related_many($instance));
         }
+        if ($this->_belongs_to) {
+            $res = array_merge($res, $this->get_related_belongs_to($instance));
+        }
         return $res;
     }
 
@@ -46,8 +51,11 @@ class ModelSerializer
     {
         $res = $instance->as_array();
         $neoarray = array();
+        $lc = $instance->list_columns();
         foreach ($res as $field => $value) {
-            $type = $instance->list_columns()[$field]["type"];
+            if(!isset($lc[$field]))
+                continue;
+            $type = $lc[$field]["type"];
             settype($value, $type);
             $neoarray[$field] = $value;
         }
@@ -119,6 +127,64 @@ class ModelSerializer
                             array_push($childs, $value);
                         }
                         $res[$name] = $childs;
+                        break;
+                }
+            }
+            return $res;
+        }
+
+    }
+
+    protected function get_related_belongs_to($instance)
+    {
+        foreach ($this->_belongs_to as $name => $type_relation) {
+            if (!in_array($name, array_keys($instance->belongs_to()))) {
+                throw new Exception("The '$name' alias does not exist.");
+            }
+        }
+        if ($many = $this->_belongs_to) {
+            $res = array();
+            foreach ($many as $name => $type_relation) {
+                switch ($type_relation[0]) {
+                    case Relationship::NestedRelated:
+                        $child = $instance->{$name};
+                        $class = Arr::get($type_relation, 1);
+                        if ($class) {
+                            $s = new $class;
+                        } else {
+                            $s = new ModelSerializer();
+                        }
+                        $res[$name] = $s->get_data($child);
+                        break;
+                    case Relationship::FieldRelated;
+                        $child = $instance->{$name};
+                        $field = Arr::get($type_relation, 1);
+                        if ($field) {
+                            $isfunc = false;
+                            try {
+                                $value = $child->{$field};
+                            } catch (Exception $ex) {
+                                $isfunc = true;
+                            }
+                            if ($isfunc) {
+                                try {
+                                    $value = $child->{$field}();
+                                } catch (Exception $ex) {
+                                    echo "no es nada";
+                                }
+                            }
+                            $res[$name] = $value;
+                        } else {
+                            $res[$name] = $child->__toString();
+                        }
+                        break;
+                    case Relationship::PrimaryKeyRelated:
+                        $child = $instance->{$name};
+                        $value = $child->pk();
+                        $pk = $child->primary_key();
+                        $type = $child->list_columns()[$pk]["type"];
+                        settype($value, $type);
+                        $res[$name] = $value;
                         break;
                 }
             }
